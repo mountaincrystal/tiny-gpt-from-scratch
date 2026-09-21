@@ -498,8 +498,12 @@ def logits_to_probs_rowwise(logits):
     exps = np.exp(logits - m)
     return exps / exps.sum(axis=1, keepdims=True)
 
-# Step 64 - gather_correct_token_probs (not yet solved)
-# TODO: implement
+# Step 64 - gather_correct_token_probs
+import numpy as np
+def gather_correct_token_probs(probs, targets):
+    """Return probs[i, targets[i]] for each i, shape (B,)."""
+    # TODO: pick out the probability assigned to the correct next token for each batch row
+    return probs[np.arange(len(targets)), targets]
 
 # Step 65 - cross_entropy_loss (not yet solved)
 # TODO: implement
