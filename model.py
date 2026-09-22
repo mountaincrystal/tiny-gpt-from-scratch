@@ -1484,8 +1484,42 @@ def adam_parameter_update(param, m_hat, v_hat, lr, eps):
     # TODO: return the updated parameter array of the same shape as param.
     return param - lr * m_hat / (np.sqrt(v_hat) + eps)
 
-# Step 154 - wire_full_training_loop (not yet solved)
-# TODO: implement
+# Step 154 - wire_full_training_loop
+def wire_full_training_loop(params, train_ids, val_ids, block_size, batch_size, n_steps, lr, betas, eps):
+    """Run the full GPT training loop for n_steps and return (updated_params, history)."""
+    # TODO: drive sample-batch -> forward -> loss -> backward -> Adam-update for n_steps...
+    beta1, beta2 = betas
+    m, v = initialize_adam_moments(params)
+    t = initialize_adam_step_counter()
+    rng = np.random.default_rng(0)
+    history = []
+
+    def apply_adam(p_node, g_node, m_node, v_node):
+        if isinstance(p_node, dict):
+            for key in p_node:
+                apply_adam(p_node[key], g_node[key], m_node[key], v_node[key])
+        elif isinstance(p_node, list):
+            for i in range(len(p_node)):
+                apply_adam(p_node[i], g_node[i], m_node[i], v_node[i])
+        else:
+            m_node[...] = adam_update_first_moment(m_node, g_node, beta1)
+            v_node[...] = adam_update_second_moment(v_node, g_node, beta2)
+            m_hat, v_hat = adam_bias_correction(m_node, v_node, beta1, beta2, t)
+            p_node[...] = adam_parameter_update(p_node, m_hat, v_hat, lr, eps)
+
+    for step in range(n_steps):
+        X, Y = get_batch(train_ids, block_size, batch_size, rng)
+        logits, caches = full_model_forward(X, params)
+        probs = logits_to_probs_rowwise(logits.reshape(-1, logits.shape[-1]))
+        targets = Y.reshape(-1)
+        loss = cross_entropy_loss(probs, targets)
+        dlogits = compute_dlogits(probs, targets).reshape(logits.shape)
+        grads = full_model_backward(dlogits, caches, params)
+        t = adam_increment_step(t)
+        apply_adam(params, grads, m, v)
+        history.append({'step': step, 'train_loss': loss})
+
+    return params, history
 
 # Step 155 - logging_and_validation_loss (not yet solved)
 # TODO: implement
