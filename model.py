@@ -1569,8 +1569,14 @@ def apply_temperature(logits, temperature):
     # TODO: rescale logits by the temperature to sharpen or flatten sampling
     return logits / temperature
 
-# Step 161 - top_k_filter (not yet solved)
-# TODO: implement
+# Step 161 - top_k_filter
+def top_k_filter(logits, k):
+    """Return logits with all but the top-k entries per row set to -inf."""
+    # TODO: keep only the top-k logits per row, replace the rest with -inf.
+    out = np.full(logits.shape, -np.inf)
+    top_idx = np.argsort(logits, axis=-1)[:, -k:]
+    np.put_along_axis(out, top_idx, np.take_along_axis(logits, top_idx, axis=-1), axis=-1)
+    return out
 
 # Step 162 - softmax_to_probs (not yet solved)
 # TODO: implement
