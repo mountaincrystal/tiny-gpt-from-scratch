@@ -1358,8 +1358,20 @@ def lm_head_linear_forward(x, w_lm, b_lm):
     out = bias_add_forward(lin['y'], b_lm)
     return {'logits': out['y'], 'cache': {'x': x, 'w_lm': w_lm}}
 
-# Step 145 - full_model_forward (not yet solved)
-# TODO: implement
+# Step 145 - full_model_forward
+def full_model_forward(x_ids, model_params):
+    """Run embeddings, all blocks, final LN, and LM head; return logits and caches."""
+    # TODO: chain token+positional embeddings, Transformer blocks, final LayerNorm, and LM head.
+    tok_out, tok_cache = token_embedding_forward(x_ids, model_params['tok_emb'])
+    seq_len = x_ids.shape[1]
+    pos = slice_positional_embedding(model_params['pos_emb'], seq_len)
+    h = add_token_and_positional_embeddings(tok_out, pos)
+    emb_cache = {'tok_cache': tok_cache, 'seq_len': seq_len}
+    h_blocks, block_caches = forward_through_all_blocks(h, model_params['blocks'])
+    ln_y, ln_cache = final_layernorm_forward(h_blocks, model_params['ln_f']['gamma'], model_params['ln_f']['beta'])
+    lm = lm_head_linear_forward(ln_y, model_params['lm_head']['w_lm'], model_params['lm_head']['b_lm'])
+    caches = {'emb': emb_cache, 'blocks': block_caches, 'ln_f': ln_cache, 'lm_head': lm['cache']}
+    return lm['logits'], caches
 
 # Step 146 - full_model_backward (not yet solved)
 # TODO: implement
