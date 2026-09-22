@@ -1055,8 +1055,12 @@ def get_multihead_sequence_length(x):
     # TODO: return the sequence length T from the (B, T, d_model) tensor.
     return get_array_shape(x)[1]
 
-# Step 123 - compute_d_head (not yet solved)
-# TODO: implement
+# Step 123 - compute_d_head
+def compute_d_head(d_model, n_heads):
+    # TODO: return the per-head dimension d_head for multi-head attention.
+    if d_model % n_heads != 0:
+        raise ValueError("n_heads must divide d_model")
+    return d_model // n_heads
 
 # Step 124 - multihead_masked_softmax_scores (not yet solved)
 # TODO: implement
