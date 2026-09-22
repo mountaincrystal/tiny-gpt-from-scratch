@@ -1180,8 +1180,11 @@ def ffn_backward(d_out, cache):
     db1 = bias_add_backward_db(d_h1_flat, {'b_shape': (w1.shape[1],)})
     return {'dx': dx, 'dw1': dw1, 'db1': db1, 'dw2': dw2, 'db2': db2}
 
-# Step 135 - residual_forward (not yet solved)
-# TODO: implement
+# Step 135 - residual_forward
+def residual_forward(x, sublayer_out):
+    """Return x + sublayer_out for a residual connection."""
+    # TODO: add the sublayer output to its input to form a residual connection.
+    return x + sublayer_out
 
 # Step 136 - residual_backward (not yet solved)
 # TODO: implement
