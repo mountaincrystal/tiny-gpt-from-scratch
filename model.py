@@ -831,8 +831,14 @@ def embedding_sum_backward(d_out):
     # TODO: route d_out to both branches, reducing over the batch axis for pos_emb.
     return {'d_token_emb': d_out, 'd_pos_emb': sum_axis0(d_out)}
 
-# Step 99 - create_qkv_projections (not yet solved)
-# TODO: implement
+# Step 99 - create_qkv_projections
+def create_qkv_projections(d_model, d_head, scale=0.02):
+    # TODO: return a dict with 'Wq','Wk','Wv', each of shape (d_model, d_head)
+    return {
+        'Wq': scale_w_small(make_2d_random(d_model, d_head, 0), scale),
+        'Wk': scale_w_small(make_2d_random(d_model, d_head, 1), scale),
+        'Wv': scale_w_small(make_2d_random(d_model, d_head, 2), scale),
+    }
 
 # Step 100 - compute_query (not yet solved)
 # TODO: implement
