@@ -1202,8 +1202,46 @@ def pre_layernorm_sublayer_forward(x, ln_params, sublayer_fn, sublayer_params):
     cache = {'x': x, 'ln_cache': ln_out['cache'], 'sublayer_cache': sub['cache']}
     return {'y': y, 'cache': cache}
 
-# Step 138 - transformer_block_forward (not yet solved)
-# TODO: implement
+# Step 138 - transformer_block_forward
+def transformer_block_forward(x, block_params):
+    """Run one pre-LN Transformer block forward.
+
+    Args:
+        x: ndarray of shape (B, T, d_model).
+        block_params: dict with keys 'ln1', 'attn', 'ln2', 'ffn'.
+
+    Returns:
+        dict with 'y' (B, T, d_model) and 'cache' with keys
+        'attn_branch' and 'ffn_branch'.
+    """
+    # TODO: compose pre-LN attention sublayer then pre-LN FFN sublayer with residuals
+    def attn_sublayer(z, p):
+        n_heads = p['n_heads']
+        seq_len = z.shape[1]
+        d_head = z.shape[-1] // n_heads
+        Q = transpose_heads_to_front(reshape_to_heads(z @ p['Wq'], n_heads, d_head))
+        K = transpose_heads_to_front(reshape_to_heads(z @ p['Wk'], n_heads, d_head))
+        V = transpose_heads_to_front(reshape_to_heads(z @ p['Wv'], n_heads, d_head))
+        scores = scale_attention_scores(compute_attention_scores(Q, K), d_head)
+        masked = apply_causal_mask(scores, build_causal_mask(seq_len))
+        attn = softmax_attention_weights(masked)
+        merged = merge_heads_to_d_model(transpose_heads_to_back(attention_weighted_values(attn, V)))
+        proj = multihead_output_projection_forward(merged, p['Wo'], p['bo'])
+        cache = {'attn': attn, 'V': V, 'Q': Q, 'K': K, 'd_head': d_head, 'n_heads': n_heads,
+                 'proj': {'merged': merged, 'Wo': p['Wo']}}
+        return {'y': proj['out'], 'cache': cache}
+
+    def ffn_sublayer(z, p):
+        out1 = ffn_linear_one_forward(z, p['w1'], p['b1'])
+        a1, act_cache = ffn_activation_forward(out1['h1'])
+        out2 = ffn_linear_two_forward(a1, p['w2'], p['b2'])
+        cache = {'lin1': out1['cache'], 'act': act_cache, 'lin2': out2['cache']}
+        return {'y': out2['h2'], 'cache': cache}
+
+    attn_branch = pre_layernorm_sublayer_forward(x, block_params['ln1'], attn_sublayer, block_params['attn'])
+    ffn_branch = pre_layernorm_sublayer_forward(attn_branch['y'], block_params['ln2'], ffn_sublayer, block_params['ffn'])
+    cache = {'attn_branch': attn_branch['cache'], 'ffn_branch': ffn_branch['cache']}
+    return {'y': ffn_branch['y'], 'cache': cache}
 
 # Step 139 - transformer_block_backward (not yet solved)
 # TODO: implement
