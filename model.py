@@ -622,8 +622,15 @@ def derive_dx_on_paper():
         "shapes: X (B, In), W (In, Out), dY (B, Out) -> dL/dX (B, In)"
     )
 
-# Step 76 - derive_linear_dw_on_paper (not yet solved)
-# TODO: implement
+# Step 76 - derive_linear_dw_on_paper
+def derive_linear_dw_on_paper():
+    """Return a string with the derivation of dL/dW for Y = X @ W."""
+    # TODO: return notes that include the final identity dL/dW = X.T @ dY
+    return (
+        "For Y = X @ W with X (B, D_in) and W (D_in, D_out), the loss gradient w.r.t. W is "
+        "dL/dW = X.T @ dY: contract the upstream gradient dY (B, D_out) with the transposed input X.T (D_in, B), "
+        "summing contributions over the batch. The result has shape (D_in, D_out), matching W."
+    )
 
 # Step 77 - linear_backward_dx (not yet solved)
 # TODO: implement
