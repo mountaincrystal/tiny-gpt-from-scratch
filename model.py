@@ -1598,8 +1598,21 @@ def append_token_to_sequence(context_ids, token_id):
     # TODO: return a (1, T+1) int array with token_id appended on the time axis
     return np.concatenate([context_ids, np.array([[token_id]])], axis=1)
 
-# Step 165 - generation_loop_for_n_steps (not yet solved)
-# TODO: implement
+# Step 165 - generation_loop_for_n_steps
+def generation_loop_for_n_steps(params, prompt_ids, n_new_tokens, block_size, temperature, top_k, rng):
+    """Iteratively generate n_new_tokens by repeatedly forwarding the cropped context."""
+    # TODO: loop n_new_tokens times: crop, forward, last-step, temperature, top-k, softmax, sample, append
+    context = prompt_ids
+    for _ in range(n_new_tokens):
+        cropped = crop_context_to_block_size(context, block_size)
+        logits = forward_to_get_logits(params, cropped)
+        last = take_last_position_logits(logits)
+        scaled = apply_temperature(last, temperature)
+        filtered = top_k_filter(scaled, top_k)
+        probs = softmax_to_probs(filtered)
+        token = sample_one_token(probs, rng)
+        context = append_token_to_sequence(context, token)
+    return context
 
 # Step 166 - decode_final_sequence (not yet solved)
 # TODO: implement
