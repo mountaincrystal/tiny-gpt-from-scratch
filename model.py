@@ -1243,8 +1243,35 @@ def transformer_block_forward(x, block_params):
     cache = {'attn_branch': attn_branch['cache'], 'ffn_branch': ffn_branch['cache']}
     return {'y': ffn_branch['y'], 'cache': cache}
 
-# Step 139 - transformer_block_backward (not yet solved)
-# TODO: implement
+# Step 139 - transformer_block_backward
+def transformer_block_backward(d_y, cache, block_params):
+    """Backward pass for a pre-LN Transformer block.
+
+    Args:
+        d_y: upstream gradient w.r.t. block output, shape (B, T, D).
+        cache: dict from transformer_block_forward, with keys 'attn_branch' and 'ffn_branch'.
+        block_params: nested dict with keys 'ln1', 'attn', 'ln2', 'ffn'.
+
+    Returns:
+        (d_x, grads) where d_x has shape (B, T, D) and grads is a nested dict
+        with keys 'ln1', 'ln2', 'attn', 'ffn' mirroring block_params.
+    """
+    # Tip: recover x from cache['attn_branch']['x'] and call _complete_block_cache(x, block_params)
+    # to guarantee every field the backward helpers need is present, no matter what the forward saved.
+    # TODO: reverse the FFN branch then the attention branch, summing residual + sublayer gradients
+    x = cache['attn_branch']['x']
+    cache = _complete_block_cache(x, block_params)
+    ffn_branch = cache['ffn_branch']
+    d_normed_ffn, ffn_grads = _ffn_sublayer_backward(d_y, ffn_branch['sublayer_cache'], block_params['ffn'])
+    d_h1_through, d_g2, d_b2 = layernorm_backward_affine(d_normed_ffn, ffn_branch['ln_cache'])
+    d_h1 = d_y + d_h1_through
+    attn_branch = cache['attn_branch']
+    d_normed_attn, attn_grads = _attn_sublayer_backward(d_h1, attn_branch['sublayer_cache'], block_params['attn'])
+    d_x_through, d_g1, d_b1 = layernorm_backward_affine(d_normed_attn, attn_branch['ln_cache'])
+    d_x = d_h1 + d_x_through
+    grads = {'ln1': {'gamma': d_g1, 'beta': d_b1}, 'ln2': {'gamma': d_g2, 'beta': d_b2},
+             'attn': attn_grads, 'ffn': ffn_grads}
+    return d_x, grads
 
 # Step 140 - stack_transformer_blocks (not yet solved)
 # TODO: implement
