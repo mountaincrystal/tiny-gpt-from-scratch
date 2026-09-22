@@ -1373,8 +1373,60 @@ def full_model_forward(x_ids, model_params):
     caches = {'emb': emb_cache, 'blocks': block_caches, 'ln_f': ln_cache, 'lm_head': lm['cache']}
     return lm['logits'], caches
 
-# Step 146 - full_model_backward (not yet solved)
-# TODO: implement
+# Step 146 - full_model_backward
+def full_model_backward(d_logits, caches, model_params):
+    """Propagate d_logits back through LM head, final LN, blocks, and embeddings.
+
+    Args:
+        d_logits: (B, T, V) gradient w.r.t. the model output
+        caches: nested dict from full_model_forward with keys
+                'emb', 'blocks', 'ln_f', 'lm_head'
+        model_params: nested dict matching the forward's parameter tree
+
+    Returns:
+        grads: nested dict mirroring model_params with keys
+               'tok_emb', 'pos_emb', 'blocks', 'ln_f': {'gamma', 'beta'},
+               'lm_head': {'w_lm', 'b_lm'}
+    """
+    # TODO: walk the forward chain in reverse, returning a grads tree shaped like model_params
+    x_lm = caches['lm_head']['x']
+    w_lm = caches['lm_head']['w_lm']
+    d_ln_y = d_logits @ w_lm.T
+    d_w_lm = np.tensordot(x_lm, d_logits, axes=([0, 1], [0, 1]))
+    d_b_lm = d_logits.sum(axis=(0, 1))
+
+    ln = caches['ln_f']
+    x_hat = ln['x_hat']
+    gamma = ln['gamma']
+    var = ln['var']
+    eps = 1e-5
+    d_x_hat = d_ln_y * gamma
+    d_gamma = (d_ln_y * x_hat).sum(axis=(0, 1))
+    d_beta = d_ln_y.sum(axis=(0, 1))
+    inv_std = 1.0 / np.sqrt(var + eps)
+    D = x_hat.shape[-1]
+    d_h = (1.0 / D) * inv_std * (
+        D * d_x_hat
+        - d_x_hat.sum(axis=-1, keepdims=True)
+        - x_hat * (d_x_hat * x_hat).sum(axis=-1, keepdims=True)
+    )
+
+    d_h_blocks, block_grads = backward_through_all_blocks(d_h, caches['blocks'], model_params['blocks'])
+
+    seq_len = caches['emb']['seq_len']
+    d_tok_emb = np.zeros_like(model_params['tok_emb'])
+    np.add.at(d_tok_emb, caches['emb']['tok_cache']['token_ids'], d_h_blocks)
+    d_pos_emb = np.zeros_like(model_params['pos_emb'])
+    d_pos_emb[:seq_len] = d_h_blocks.sum(axis=0)
+
+    grads = {
+        'tok_emb': d_tok_emb,
+        'pos_emb': d_pos_emb,
+        'blocks': block_grads,
+        'ln_f': {'gamma': d_gamma, 'beta': d_beta},
+        'lm_head': {'w_lm': d_w_lm, 'b_lm': d_b_lm},
+    }
+    return grads
 
 # Step 147 - initialize_adam_moments (not yet solved)
 # TODO: implement
