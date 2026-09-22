@@ -659,8 +659,16 @@ def bias_add_backward_db(dy, cache):
     # TODO: sum the upstream gradient over the batch dimension to get db of shape (D,)
     return dy.sum(axis=0)
 
-# Step 81 - relu_forward (not yet solved)
-# TODO: implement
+# Step 81 - relu_forward
+import numpy as np
+def relu_forward(x):
+    """Apply elementwise ReLU and cache the input for backward.
+
+    Returns a dict with keys 'y' (activated array) and 'cache' (dict with 'x').
+    """
+    # TODO: apply elementwise ReLU and cache the input for backward.
+    y = np.maximum(0, x)
+    return {'y': y, 'cache': {'x': x}}
 
 # Step 82 - relu_backward (not yet solved)
 # TODO: implement
