@@ -632,8 +632,10 @@ def derive_linear_dw_on_paper():
         "summing contributions over the batch. The result has shape (D_in, D_out), matching W."
     )
 
-# Step 77 - linear_backward_dx (not yet solved)
-# TODO: implement
+# Step 77 - linear_backward_dx
+def linear_backward_dx(dy, cache):
+    # TODO: compute the gradient of the loss w.r.t. the linear layer input X given dy and cache
+    return dy @ cache['w'].T
 
 # Step 78 - linear_backward_dw (not yet solved)
 # TODO: implement
